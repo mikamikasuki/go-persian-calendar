@@ -424,24 +424,6 @@ func norm(hi, lo, base int) (int, int) {
 	return hi, lo
 }
 
-// norm returns nhi, nlo such that
-//
-//	hi * base + lo == nhi * base + nlo
-//	0 <= nlo < base
-func normDay(hi, lo, base int) (int, int) {
-	if lo < 1 {
-		n := (-lo-1)/base + 1
-		hi -= n
-		lo += n * base
-	}
-	if lo > base {
-		n := lo / base
-		hi += n
-		lo -= n * base
-	}
-	return hi, lo
-}
-
 // Set sets t.
 //
 // year, month and day represent a day in Persian calendar.
@@ -464,19 +446,9 @@ func (t *Time) Set(year int, month Month, day, hour, minute, sec, nsec int, loc 
 	m := int(month) - 1
 	year, m = norm(year, m, 12)
 
-	if m < 0 {
-		m = 0
-	} else if m > 11 {
-		m = 11
-	}
-
-	if isLeap(year) {
-		m, day = normDay(m, day, pMonthCount[m][1])
-	} else {
-		m, day = normDay(m, day, pMonthCount[m][0])
-	}
-	year, m = norm(year, m, 12)
-	month = Month(m) + 1
+	// Normalize day using calendar days, which accounts for differing month lengths.
+	year, m, day = convertJDNToShamsi(convertShamsiToJDN(year, m+1, day))
+	month = Month(m)
 	t.year = year
 	t.month = month
 	t.day = day
