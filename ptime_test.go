@@ -3,6 +3,7 @@ package ptime_test
 import (
 	"fmt"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -785,6 +786,29 @@ func TestDateDayOffsets(t *testing.T) {
 			if got.Year() != tc.want.year || got.Month() != tc.want.month || got.Day() != tc.want.day ||
 				!got.Equal(want) || got.Weekday() != want.Weekday() {
 				t.Errorf("Date(%d, %d, %d, %d) = %s, want %s", tc.year, tc.month, tc.day, tc.hour, got, want)
+			}
+		})
+	}
+}
+
+func TestDatePreservesValidYears(t *testing.T) {
+	const maxInt = int(^uint(0) >> 1)
+	for _, year := range []int{-10000, -2200, -1595, -1, 0, 1, 475, 476, -maxInt - 1, maxInt} {
+		t.Run(strconv.Itoa(year), func(t *testing.T) {
+			got := ptime.Date(year, ptime.Farvardin, 1, 12, 34, 56, 123456789, time.UTC)
+			if got.Year() != year || got.Month() != ptime.Farvardin || got.Day() != 1 {
+				t.Errorf("Date(%d, Farvardin, 1) = %v", year, got)
+			}
+		})
+	}
+}
+
+func TestDatePreservesNegativeDayNormalization(t *testing.T) {
+	for _, year := range []int{-2200, -1596, -1595, -1} {
+		t.Run(strconv.Itoa(year), func(t *testing.T) {
+			got := ptime.Date(year, ptime.Farvardin, 32, 12, 34, 56, 123456789, time.UTC)
+			if got.Year() != year || got.Month() != ptime.Ordibehesht || got.Day() != 1 {
+				t.Errorf("Date(%d, Farvardin, 32) = %v", year, got)
 			}
 		})
 	}
